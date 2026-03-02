@@ -7,8 +7,16 @@ module Croutons
     end
 
     def render_to_body(options)
-      @_template = options[:template]
-      @_prefixes = options[:prefixes]
+      if defined?(Rails) && Rails::VERSION::MAJOR >= 8
+        @template_prefixes = []
+        @template_name = options[:action] || action_name
+        @default_template_path = [controller_path, @template_name].join('/')
+        @template_path = options[:template] || @default_template_path
+      else
+        @template_prefixes = options[:prefixes]
+        @template_path = options[:template]
+      end
+
       super
     end
 
@@ -27,9 +35,9 @@ module Croutons
 
     def breadcrumb_trail(objects = {})
       @breadcrumb_trail ||= begin
-        return [] unless @_template.present?
+        return [] unless @template_path.present?
 
-        template = lookup_context.find_template(@_template, @_prefixes)
+        template = lookup_context.find_template(@template_path, @template_prefixes)
         template_identifier = template.virtual_path.gsub('/', '_')
         objects.reverse_merge!(view_assigns)
         objects[:params] = params
